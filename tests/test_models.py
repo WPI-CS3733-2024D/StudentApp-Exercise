@@ -31,23 +31,23 @@ class TestModels(unittest.TestCase):
         self.assertTrue(u.check_password('covid'))
 
     def test_enroll(self):
-        m1 = Major(name='CptS', department='EECS')
+        m1 = Major(name='CS', department='Computer Science')
         db.session.add(m1)
         db.session.commit()
         u1 = Student(username='john', email='john.yates@wsu.com')
-        c1 = Class(major='CptS', coursenum='355')
+        c1 = Class(major='CS', coursenum='3551')
         db.session.add(u1)
         db.session.add(c1)
         db.session.commit()
         self.assertEqual(u1.classes, [])
         self.assertEqual(c1.roster, [])
 
-        u1.enroll(c1)
+        u1.enroll(c1) # exercise the test
         db.session.commit()
         self.assertTrue(u1.is_enrolled(c1))
         self.assertEqual(len(u1.classes), 1)
-        self.assertEqual(u1.classes[0].classenrolled.coursenum, '355')
-        self.assertEqual(u1.classes[0].classenrolled.major, 'CptS')
+        self.assertEqual(u1.classes[0].classenrolled.coursenum, '3551')
+        self.assertEqual(u1.classes[0].classenrolled.major, 'CS')
         self.assertEqual(len(c1.roster), 1)
         self.assertEqual(c1.roster[0].studentenrolled.username, 'john')
 
@@ -56,6 +56,7 @@ class TestModels(unittest.TestCase):
         self.assertFalse(u1.is_enrolled(c1))
         self.assertEqual(len(u1.classes), 0)
         self.assertEqual(len(c1.roster), 0)
+
 
     
 

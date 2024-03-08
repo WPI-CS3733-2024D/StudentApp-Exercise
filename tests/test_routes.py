@@ -25,7 +25,7 @@ def test_client():
     # create the flask application ; configure the app for tests
     flask_app = create_app(config_class=TestConfig)
 
-    db.init_app(flask_app)
+    # db.init_app(flask_app)
     # Flask provides a way to test your application by exposing the Werkzeug test Client
     # and handling the context locals for you.
     testing_client = flask_app.test_client()
@@ -51,7 +51,7 @@ def init_database(request,test_client):
     db.create_all()
     # initialize the majors
     if Major.query.count() == 0:
-        majors = [{'name':'CptS','department':'School of EECS'},{'name':'SE','department':'Schoolof EECS'},{'name':'EE','department':'School of EECS'},
+        majors = [{'name':'CS','department':'Computer Science'},{'name':'SE','department':'Computer Science'},{'name':'EE','department':'Electrical Engineering'},
                   {'name':'ME','department':'Mechanical Engineering'}, {'name':'MATH','department': 'Mathematics'}  ]
         for t in majors:
             db.session.add(Major(name=t['name'],department=t['department']))
@@ -94,8 +94,8 @@ def test_register(request,test_client,init_database):
     s = db.session.query(Student).filter(Student.username=='john')
     assert s.first().lastname == 'Yates'
     assert s.count() == 1
-    assert b"Please log in to access this page." in response.data
-    assert b"Congratulations, you are now a registered user!" in response.data
+    assert b"Please log in to access this page." in response.data  #Students should update this assertion condition according to their own page content
+    assert b"Congratulations, you are now a registered user!" in response.data  #Students should update this assertion condition according to their own page content
     assert b"Sign In" in response.data   
 
 def test_invalidlogin(request,test_client,init_database):
@@ -120,7 +120,7 @@ def test_login_logout(request,test_client,init_database):
                           data=dict(username='sakire', password='1234',remember_me=False),
                           follow_redirects = True)
     assert response.status_code == 200
-    assert b"Hi, Sakire Arslan Ay!" in response.data
+    assert b"Hi, Sakire Arslan Ay!" in response.data  #Students should update this assertion condition according to their own page content
 
     response = test_client.get('/logout',                       
                           follow_redirects = True)
@@ -139,19 +139,19 @@ def test_createclass(request,test_client,init_database):
                           data=dict(username='sakire', password='1234',remember_me=False),
                           follow_redirects = True)
     assert response.status_code == 200
-    assert b"Hi, Sakire Arslan Ay!" in response.data
+    assert b"Hi, Sakire Arslan Ay!" in response.data  #Students should update this assertion condition according to their own page content
     
     #test the "create class" form 
     response = test_client.get('/createclass')
     assert response.status_code == 200
-    assert b"Create a new class" in response.data
+    assert b"Create a new class" in response.data  #Students should update this assertion condition according to their own page content
     
     #test posting a class
     response = test_client.post('/createclass', 
-                          data=dict(coursenum = '355', title = 'Programming Languages', major = 'CptS'),
+                          data=dict(coursenum = '355', title = 'Programming Languages', major = 'CS'),
                           follow_redirects = True)
     assert response.status_code == 200
-    assert b"CptS 355" in response.data
+    assert b"CS 355" in response.data
     assert b"Programming Languages" in response.data 
     c = db.session.query(Class).filter(Class.coursenum =='355')
     assert c.first().title == 'Programming Languages'
@@ -170,17 +170,34 @@ def test_enroll(request,test_client,init_database):
     WHEN the '/enroll' form is submitted (POST)
     THEN check that response is valid and the currently logged in user (student) is successfully added to roster
     """
-    """We will write this test in class."""
-    pass
+    #first login
+    response = test_client.post('/login', 
+                          data=dict(username='sakire', password='1234',remember_me=False),
+                          follow_redirects = True)
+    assert response.status_code == 200
+    assert b"Hi, Sakire Arslan Ay!" in response.data    #Students should update this assertion condition according to their own page content
+    
+    #create a class
+    response = test_client.post('/createclass', 
+                          data=dict(coursenum = '355', title = 'Programming Languages', major = 'CS'),
+                          follow_redirects = True)
+    assert response.status_code == 200
+    c = db.session.query(Class).filter(Class.coursenum =='355')
+    assert c.count() == 1
 
-# def test_login(request,test_client,init_database):
-#     """
-#     GIVEN a Flask application configured for testing
-#     WHEN the '/' page is requested (GET)
-#     THEN check that the response is valid
-#     """
-#     response = test_client.post('/login', 
-#                           data=dict(username='sakire', password='1234',remember_me=False),
-#                           follow_redirects = True)
-#     assert response.status_code == 200
-#     assert b"Hi, Sakire Arslan Ay!" in response.data
+    #enroll the logged in student in CS 355
+    response = test_client.post('/enroll/'+str(c.first().id), 
+                        data=dict(),
+                        follow_redirects = True)
+    assert response.status_code == 200
+    assert b"You are now enrolled in class CS 355!" in response.data
+    c = db.session.query(Class).filter(Class.coursenum =='355' and Class.major == 'CS')
+    assert c.first().roster[0].studentenrolled.username == 'sakire'
+
+    #finally logout
+    response = test_client.get('/logout',                       
+                          follow_redirects = True)
+    assert response.status_code == 200
+    assert b"Sign In" in response.data  #Students should update this assertion condition according to their own page content
+
+
